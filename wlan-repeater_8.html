@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WLAN-Repeater – Besseres WLAN zu Hause</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0f2b;
+    --bg2:#12163a;
+    --panel:#191e4d;
+    --panel2:#1f2660;
+    --line:#2c3374;
+    --ink:#eef0ff;
+    --muted:#9aa0d4;
+    --faint:#6b73ad;
+    --signal:#3ee0c0;
+    --signal-soft:#2bbfa5;
+    --weak:#f0685c;
+    --gold:#ffce6b;
+    --shadow:0 24px 60px -20px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 700px at 78% -10%, rgba(62,224,192,.10), transparent 60%),
+      radial-gradient(900px 600px at 8% 110%, rgba(107,115,173,.14), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Inter",system-ui,sans-serif;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .deck{position:fixed;inset:0}
+
+  /* ---------- slides ---------- */
+  .slide{
+    position:absolute;inset:0;
+    display:block;
+    padding:clamp(34px,6vh,60px) clamp(24px,5vw,80px) clamp(108px,13vh,128px);
+    overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    opacity:0;visibility:hidden;
+    transform:translateY(14px);
+    transition:opacity .5s ease, transform .5s ease, visibility .5s;
+  }
+  .sc{min-height:100%;width:100%;display:flex;flex-direction:column;justify-content:center}
+  .slide.is-active{opacity:1;visibility:visible;transform:none}
+
+  .eyebrow{
+    font-family:"Space Mono",monospace;
+    font-size:clamp(11px,1.15vw,14px);
+    letter-spacing:.28em;text-transform:uppercase;
+    color:var(--signal);
+    display:flex;align-items:center;gap:14px;
+    margin-bottom:26px;
+  }
+  .eyebrow::before{content:"";width:34px;height:2px;background:var(--signal);opacity:.7}
+
+  h1{
+    font-family:"Space Grotesk",sans-serif;
+    font-weight:700;line-height:1.02;
+    font-size:clamp(38px,7vw,86px);
+    letter-spacing:-.02em;
+  }
+  h2{
+    font-family:"Space Grotesk",sans-serif;
+    font-weight:600;line-height:1.05;
+    font-size:clamp(30px,4.6vw,60px);
+    letter-spacing:-.015em;
+  }
+  .lead{
+    font-size:clamp(17px,1.9vw,25px);
+    color:var(--muted);max-width:44ch;line-height:1.5;margin-top:22px;
+  }
+  .accent{color:var(--signal)}
+  .accent-weak{color:var(--weak)}
+  .accent-gold{color:var(--gold)}
+
+  /* ---------- title slide ---------- */
+  .title-tag{
+    font-family:"Space Mono",monospace;font-size:14px;color:var(--muted);
+    letter-spacing:.05em;margin-top:34px;
+    display:flex;gap:10px;align-items:center;
+  }
+  .title-tag b{color:var(--ink);font-weight:700}
+  .device-word{
+    display:inline-block;
+    background:linear-gradient(120deg,var(--signal),#7bf0dc);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .ambient{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:-1;pointer-events:none;opacity:1}
+
+  /* ---------- generic content ---------- */
+  .cols{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,3.5vw,52px);align-items:center;max-width:1040px;margin-inline:auto;width:100%}
+  @media (max-width:880px){
+    .cols{grid-template-columns:1fr;gap:26px}
+    .slide{padding:clamp(26px,5vh,44px) 22px 104px}
+    h1{font-size:clamp(34px,10vw,56px)}
+    h2{font-size:clamp(26px,7.6vw,42px)}
+    .lead{margin-top:16px}
+    .points{margin-top:20px;gap:12px}
+    .grid{margin-top:22px}
+    .socket-fig svg{width:min(200px,52vw)}
+  }
+
+  .points{list-style:none;margin-top:30px;display:grid;gap:16px;max-width:46ch}
+  .points li{
+    display:flex;gap:16px;align-items:flex-start;
+    font-size:clamp(16px,1.6vw,21px);line-height:1.4;color:var(--ink);
+  }
+  .points li b{color:var(--signal);font-weight:600}
+  .num{
+    flex:none;width:30px;height:30px;border-radius:9px;
+    display:grid;place-items:center;
+    font-family:"Space Mono",monospace;font-size:13px;font-weight:700;
+    background:var(--panel2);color:var(--signal);border:1px solid var(--line);
+  }
+
+  /* ---------- cards ---------- */
+  .grid{display:grid;gap:clamp(14px,1.7vw,20px);margin-top:36px}
+  .grid.g4{grid-template-columns:repeat(2,1fr)}
+  .grid.g3{grid-template-columns:repeat(3,1fr)}
+  @media (max-width:880px){.grid.g4,.grid.g3{grid-template-columns:1fr}}
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--bg2));
+    border:1px solid var(--line);border-radius:16px;
+    padding:clamp(18px,2vw,26px);box-shadow:var(--shadow);
+    position:relative;overflow:hidden;
+  }
+  .card .ic{font-size:26px;margin-bottom:12px;display:block}
+  .card h3{font-family:"Space Grotesk";font-size:clamp(17px,1.8vw,22px);font-weight:600;margin-bottom:7px}
+  .card p{color:var(--muted);font-size:clamp(14px,1.4vw,16px);line-height:1.45}
+  .card.warn{border-color:rgba(240,104,92,.35)}
+  .card.warn h3{color:#ff8f84}
+
+  /* chips */
+  .chips{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
+  .chip{
+    font-family:"Space Grotesk";font-weight:600;
+    font-size:clamp(16px,1.9vw,24px);
+    padding:14px 26px;border-radius:100px;
+    background:var(--panel2);border:1px solid var(--line);
+  }
+  .chip span{color:var(--signal)}
+
+  /* quote */
+  .meinung{display:grid;grid-template-columns:auto 1fr;column-gap:clamp(10px,1.6vw,22px);align-items:center;max-width:760px;margin-top:10px}
+  .quote{
+    font-family:"Space Grotesk";font-weight:600;
+    font-size:clamp(26px,4.2vw,52px);line-height:1.12;letter-spacing:-.015em;
+  }
+  .quote .k2{
+    background:linear-gradient(120deg,var(--gold),#ffe4a3);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .qmark{font-family:Georgia,serif;font-size:clamp(58px,8.5vw,108px);line-height:.7;color:var(--line)}
+
+  /* fazit tags */
+  .fazit-tags{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+  .fazit-tags .t{
+    display:flex;align-items:center;gap:10px;
+    font-size:clamp(15px,1.6vw,19px);color:var(--ink);
+    background:var(--panel);border:1px solid var(--line);
+    padding:12px 20px;border-radius:12px;
+  }
+  .fazit-tags .t::before{content:"✓";color:var(--signal);font-weight:700}
+  .thanks{
+    margin-top:44px;font-family:"Space Grotesk";
+    font-size:clamp(22px,3vw,38px);font-weight:600;
+  }
+  .thanks small{display:block;color:var(--muted);font-weight:400;font-size:clamp(15px,1.7vw,22px);margin-top:8px}
+
+  /* problem visual */
+  .buffer{display:flex;flex-direction:column;align-items:center;gap:18px}
+  .screen{
+    width:min(320px,60vw);aspect-ratio:16/10;border-radius:14px;
+    background:var(--bg2);border:1px solid var(--line);
+    display:grid;place-items:center;position:relative;overflow:hidden;box-shadow:var(--shadow);
+  }
+  .spinner{width:60px;height:60px;border-radius:50%;
+    border:5px solid var(--panel2);border-top-color:var(--weak);
+    animation:spin 1s linear infinite}
+  .screen .lbl{position:absolute;bottom:12px;font-family:"Space Mono";font-size:12px;color:var(--weak);letter-spacing:.1em}
+  .bars{display:flex;gap:6px;align-items:flex-end;height:44px}
+  .bars i{width:12px;background:var(--panel2);border-radius:3px}
+  .bars i:nth-child(1){height:30%}
+  .bars i:nth-child(2){height:55%;background:var(--weak);opacity:.55}
+  .bars i:nth-child(3){height:80%;opacity:.3}
+  .bars i:nth-child(4){height:100%;opacity:.3}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .problem-fig{display:flex;justify-content:center}
+  .problem-fig svg{width:min(460px,90vw);height:auto;overflow:visible}
+  .loadring{transform-box:fill-box;transform-origin:center;animation:spin 1.1s linear infinite}
+
+  /* device-in-socket */
+  .socket-fig{display:grid;place-items:center}
+
+  /* ---------- signature: house diagram ---------- */
+  .house-wrap{display:flex;flex-direction:column;align-items:center;gap:22px}
+  .toggle{
+    display:inline-flex;background:var(--bg2);border:1px solid var(--line);
+    border-radius:100px;padding:5px;gap:4px;
+  }
+  .toggle button{
+    font-family:"Space Grotesk";font-weight:600;font-size:clamp(14px,1.5vw,17px);
+    color:var(--muted);background:transparent;border:0;cursor:pointer;
+    padding:10px 22px;border-radius:100px;transition:.25s;
+  }
+  .toggle button.on{color:#08240d;background:var(--signal)}
+  .toggle button.on.weak{color:#2a0805;background:var(--weak)}
+  .house-cap{
+    color:var(--muted);font-size:clamp(14px,1.5vw,18px);text-align:center;
+    max-width:52ch;min-height:2.6em;line-height:1.4;transition:.3s;
+  }
+  .house-cap b{color:var(--ink);font-weight:600}
+  svg.house{width:min(760px,92vw);height:auto;display:block}
+
+  .room{fill:var(--panel);stroke:var(--line);stroke-width:2;transition:fill .5s,stroke .5s}
+  .room-lbl{fill:var(--faint);font-family:"Space Grotesk";font-weight:600;font-size:16px;transition:fill .5s}
+  .device-box{fill:var(--panel2);stroke:var(--line);stroke-width:2}
+  .device-lbl{fill:var(--muted);font-family:"Space Mono";font-size:12px;letter-spacing:.06em}
+
+  /* emitter rings */
+  .ring{fill:none;stroke-width:2.5;vector-effect:non-scaling-stroke;transform-box:fill-box;transform-origin:center;opacity:0}
+  .emit .ring{animation:emit 2.6s ease-out infinite}
+  .emit .ring:nth-child(2){animation-delay:.85s}
+  .emit .ring:nth-child(3){animation-delay:1.7s}
+  @keyframes emit{0%{transform:scale(.18);opacity:.85}70%{opacity:.18}100%{transform:scale(1);opacity:0}}
+
+  .badge{opacity:0;transition:opacity .45s}
+  .badge.show{opacity:1}
+  .badge rect{rx:9}
+  .badge text{font-family:"Space Grotesk";font-weight:700;font-size:13px}
+
+  /* repeater hidden until "mit" — animate ONLY opacity, never transform
+     (a CSS transform here would override the SVG translate() and move the group to 0,0) */
+  #repeaterGroup{opacity:0;transition:opacity .5s}
+  .withrep #repeaterGroup{opacity:1}
+
+  /* ---------- chrome / nav ---------- */
+  .topbar{position:fixed;top:22px;right:26px;display:flex;gap:10px;z-index:20}
+  .iconbtn{
+    width:44px;height:44px;border-radius:11px;cursor:pointer;
+    background:rgba(25,30,77,.7);border:1px solid var(--line);color:var(--muted);
+    display:grid;place-items:center;font-size:17px;transition:.2s;backdrop-filter:blur(6px);
+  }
+  .iconbtn:hover{color:var(--ink);border-color:var(--signal)}
+
+  .navbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px clamp(20px,5vw,60px) 28px;
+    background:linear-gradient(0deg,rgba(12,15,43,.9),transparent);
+  }
+  .counter{font-family:"Space Mono";font-size:13px;color:var(--muted);letter-spacing:.12em}
+  .counter b{color:var(--ink)}
+  .dots{display:flex;gap:9px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);cursor:pointer;transition:.25s;border:0;padding:0}
+  .dot.on{background:var(--signal);transform:scale(1.25)}
+  .arrows{display:flex;gap:10px}
+  .arrows button{
+    width:46px;height:46px;border-radius:12px;cursor:pointer;
+    background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    font-size:18px;transition:.2s;
+  }
+  .arrows button:hover:not(:disabled){border-color:var(--signal);color:var(--signal)}
+  .arrows button:disabled{opacity:.32;cursor:default}
+
+  .progress{position:fixed;top:0;left:0;height:3px;background:var(--signal);z-index:30;transition:width .5s ease;box-shadow:0 0 12px var(--signal)}
+
+  .hint{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);
+    font-family:"Space Mono";font-size:11px;color:var(--faint);letter-spacing:.1em;z-index:15;
+    opacity:1;transition:opacity .6s}
+  .hint.gone{opacity:0}
+
+  @media (prefers-reduced-motion:reduce){
+    .slide{transition:opacity .2s}
+    .emit .ring{animation:none;opacity:.3}
+    .spinner,.loadring{animation:none}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+
+<div class="topbar">
+  <div class="iconbtn" id="fsBtn" title="Vollbild">⛶</div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- 0 · TITEL -->
+  <section class="slide" id="s-title">
+      <div class="sc">
+    <canvas class="ambient" id="ambientCanvas" aria-hidden="true"></canvas>
+    <div class="eyebrow">Produktpräsentation · Deutschkurs B2</div>
+    <h1>Besseres WLAN<br>zu Hause.</h1>
+    <div class="title-tag">Das Gerät: <b>Der <span class="device-word">WLAN-Repeater</span></b> — auch WLAN-Verstärker</div>
+    <p class="lead">Schwaches Signal im Schlafzimmer oder Keller? Eine einfache und günstige Lösung.</p>
+  </div>
+    </section>
+
+  <!-- 1 · PROBLEM -->
+  <section class="slide" id="s-problem">
+      <div class="sc">
+    <div class="cols">
+      <div>
+        <div class="eyebrow">01 · Die Situation</div>
+        <h2>Abends ein Film –<br>und das Video<br><span class="accent-weak">lädt ständig nach.</span></h2>
+        <p class="lead">Sie sitzen im Schlafzimmer, doch das WLAN-Signal ist einfach zu schwach. Ein ganz alltägliches Problem.</p>
+      </div>
+      <div class="problem-fig">
+        <svg viewBox="0 0 460 330" role="img" aria-label="Das Router-Signal wird über die Entfernung schwächer; im Schlafzimmer puffert das Video">
+          <!-- pills: strong vs weak -->
+          <rect x="16" y="40" width="120" height="26" rx="13" fill="rgba(62,224,192,.14)" stroke="var(--signal)" stroke-width="1.5"/>
+          <text x="76" y="57" text-anchor="middle" fill="var(--signal)" font-family="Space Grotesk" font-weight="600" font-size="12">Starkes Signal</text>
+          <rect x="298" y="40" width="140" height="26" rx="13" fill="rgba(240,104,92,.14)" stroke="var(--weak)" stroke-width="1.5"/>
+          <text x="368" y="57" text-anchor="middle" fill="var(--weak)" font-family="Space Grotesk" font-weight="600" font-size="12">Schwaches Signal</text>
+
+          <!-- signal ripples: teal -> coral, fading with distance -->
+          <path d="M113.5 112.8 A50 50 0 0 1 113.5 187.2" fill="none" stroke="rgb(62,224,192)" stroke-opacity=".85" stroke-width="3" vector-effect="non-scaling-stroke"/>
+          <path d="M140.2 83.1 A90 90 0 0 1 140.2 216.9" fill="none" stroke="rgb(120,210,160)" stroke-opacity=".6" stroke-width="2.6" vector-effect="non-scaling-stroke"/>
+          <path d="M167 53.4 A130 130 0 0 1 167 246.6" fill="none" stroke="rgb(224,190,110)" stroke-opacity=".5" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
+          <path d="M193.7 23.7 A170 170 0 0 1 193.7 276.3" fill="none" stroke="rgb(240,120,95)" stroke-opacity=".33" stroke-width="2.2" vector-effect="non-scaling-stroke"/>
+
+          <!-- router -->
+          <line x1="66" y1="150" x2="60" y2="130" stroke="var(--signal)" stroke-width="2.5"/>
+          <line x1="94" y1="150" x2="100" y2="130" stroke="var(--signal)" stroke-width="2.5"/>
+          <rect x="53" y="150" width="54" height="32" rx="7" fill="var(--panel2)" stroke="var(--signal)" stroke-width="2"/>
+          <circle cx="80" cy="166" r="4" fill="var(--signal)"/>
+          <text x="80" y="203" text-anchor="middle" fill="var(--muted)" font-family="Space Mono" font-size="12">ROUTER</text>
+          <text x="80" y="219" text-anchor="middle" fill="var(--faint)" font-family="Inter" font-size="11">Wohnzimmer</text>
+
+          <!-- phone: buffering -->
+          <rect x="336" y="96" width="60" height="118" rx="12" fill="var(--panel)" stroke="var(--line)" stroke-width="2"/>
+          <rect x="343" y="108" width="46" height="80" rx="4" fill="var(--bg2)"/>
+          <circle cx="366" cy="138" r="15" fill="none" stroke="var(--panel2)" stroke-width="4"/>
+          <circle class="loadring" cx="366" cy="138" r="15" fill="none" stroke="var(--weak)" stroke-width="4" stroke-linecap="round" stroke-dasharray="26 80"/>
+          <rect x="349" y="168" width="34" height="6" rx="3" fill="var(--panel2)"/>
+          <rect x="349" y="168" width="12" height="6" rx="3" fill="var(--weak)"/>
+          <text x="366" y="205" text-anchor="middle" fill="var(--weak)" font-family="Space Mono" font-size="9">PUFFERT…</text>
+          <text x="366" y="236" text-anchor="middle" fill="var(--faint)" font-family="Inter" font-size="11">Schlafzimmer</text>
+
+          <!-- distance -->
+          <line x1="80" y1="292" x2="366" y2="292" stroke="var(--faint)" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <path d="M80 288 L80 296 M366 288 L366 296" stroke="var(--faint)" stroke-width="1.5"/>
+          <rect x="168" y="280" width="110" height="24" rx="12" fill="var(--bg)"/>
+          <text x="223" y="296" text-anchor="middle" fill="var(--muted)" font-family="Inter" font-size="12">Große Entfernung</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+    </section>
+
+  <!-- 2 · WAS IST DAS -->
+  <section class="slide" id="s-was">
+      <div class="sc">
+    <div class="cols">
+      <div>
+        <div class="eyebrow">02 · Definition</div>
+        <h2>Was ist ein<br>WLAN-Repeater?</h2>
+        <ul class="points">
+          <li><span class="num">1</span><span>Ein <b>kleines Gerät</b>, das direkt in die Steckdose gesteckt wird.</span></li>
+          <li><span class="num">2</span><span>Es <b>empfängt das Signal</b> des Routers …</span></li>
+          <li><span class="num">3</span><span>… und <b>sendet es verstärkt weiter.</b></span></li>
+          <li><span class="num">4</span><span>So wird die <b>Reichweite</b> des Netzwerks deutlich vergrößert.</span></li>
+        </ul>
+      </div>
+      <div class="socket-fig">
+        <svg viewBox="0 0 260 300" width="230" style="max-width:60vw">
+          <!-- wall -->
+          <rect x="0" y="0" width="260" height="300" rx="18" fill="var(--bg2)" stroke="var(--line)" stroke-width="2"/>
+          <!-- socket -->
+          <rect x="86" y="196" width="88" height="70" rx="10" fill="var(--panel2)" stroke="var(--line)" stroke-width="2"/>
+          <circle cx="112" cy="231" r="6" fill="var(--faint)"/>
+          <circle cx="148" cy="231" r="6" fill="var(--faint)"/>
+          <!-- repeater body -->
+          <rect x="70" y="70" width="120" height="140" rx="16" fill="var(--panel)" stroke="var(--signal)" stroke-width="2.5"/>
+          <circle cx="130" cy="120" r="7" fill="var(--signal)"/>
+          <text x="130" y="165" text-anchor="middle" fill="var(--muted)" font-family="Space Mono" font-size="13">REPEATER</text>
+          <!-- signal -->
+          <g transform="translate(130,86)" class="emit">
+            <circle class="ring" r="60" style="stroke:var(--signal)"/>
+            <circle class="ring" r="60" style="stroke:var(--signal)"/>
+            <circle class="ring" r="60" style="stroke:var(--signal)"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+    </section>
+
+  <!-- 3 · WIE FUNKTIONIERT ES (SIGNATURE) -->
+  <section class="slide" id="s-wie">
+      <div class="sc">
+    <div class="eyebrow">03 · Funktionsweise</div>
+    <div class="house-wrap">
+      <div class="toggle" role="group" aria-label="Ansicht wählen">
+        <button id="btnOhne" class="on weak">Ohne Repeater</button>
+        <button id="btnMit">Mit Repeater</button>
+      </div>
+
+      <svg class="house" id="houseSvg" viewBox="0 0 800 430" aria-label="Querschnitt eines Hauses mit WLAN-Signal">
+        <!-- roof -->
+        <path d="M60 120 L400 34 L740 120 Z" fill="var(--bg2)" stroke="var(--line)" stroke-width="2"/>
+        <!-- rooms row -->
+        <rect class="room" x="60"  y="120" width="220" height="150"/>
+        <rect class="room" x="280" y="120" width="180" height="150"/>
+        <rect class="room" id="roomBed" x="460" y="120" width="280" height="150"/>
+        <!-- keller -->
+        <rect class="room" id="roomKeller" x="60" y="270" width="680" height="120"/>
+
+        <text class="room-lbl" x="80"  y="150">Wohnzimmer</text>
+        <text class="room-lbl" x="300" y="150">Flur</text>
+        <text class="room-lbl" id="lblBed" x="480" y="150">Schlafzimmer</text>
+        <text class="room-lbl" id="lblKeller" x="80" y="300">Keller</text>
+
+        <!-- Router in Wohnzimmer -->
+        <g transform="translate(150,235)">
+          <rect class="device-box" x="-34" y="-20" width="68" height="34" rx="7" style="stroke:var(--signal)"/>
+          <line x1="-14" y1="-20" x2="-20" y2="-40" stroke="var(--signal)" stroke-width="2.5"/>
+          <line x1="14" y1="-20" x2="20" y2="-40" stroke="var(--signal)" stroke-width="2.5"/>
+          <text class="device-lbl" x="0" y="30" text-anchor="middle">ROUTER</text>
+          <g class="emit">
+            <circle class="ring" r="150" style="stroke:var(--signal)"/>
+            <circle class="ring" r="150" style="stroke:var(--signal)"/>
+            <circle class="ring" r="150" style="stroke:var(--signal)"/>
+          </g>
+        </g>
+
+        <!-- Repeater in Flur (only "mit") -->
+        <g id="repeaterGroup" transform="translate(370,222)">
+          <rect class="device-box" x="-24" y="-24" width="48" height="48" rx="8" style="stroke:var(--signal)"/>
+          <circle cx="0" cy="-6" r="5" fill="var(--signal)"/>
+          <text class="device-lbl" x="0" y="40" text-anchor="middle">REPEATER</text>
+          <g class="emit">
+            <circle class="ring" r="150" style="stroke:var(--signal)"/>
+            <circle class="ring" r="150" style="stroke:var(--signal)"/>
+            <circle class="ring" r="150" style="stroke:var(--signal)"/>
+          </g>
+        </g>
+
+        <!-- status badges -->
+        <g class="badge show" id="badgeBed">
+          <rect x="590" y="178" width="128" height="30" rx="9" fill="rgba(240,104,92,.16)" stroke="var(--weak)"/>
+          <text x="654" y="198" text-anchor="middle" fill="var(--weak)">Schwaches Signal</text>
+        </g>
+        <g class="badge show" id="badgeKeller">
+          <rect x="560" y="316" width="118" height="30" rx="9" fill="rgba(240,104,92,.16)" stroke="var(--weak)"/>
+          <text x="619" y="336" text-anchor="middle" fill="var(--weak)">Kein Empfang</text>
+        </g>
+      </svg>
+
+      <p class="house-cap" id="houseCap">
+        <b>Ohne Repeater:</b> Das Router-Signal wird mit der Entfernung schwächer. Im Schlafzimmer und im Keller bricht die Verbindung oft ab.
+      </p>
+    </div>
+  </div>
+    </section>
+
+  <!-- 4 · VORTEILE -->
+  <section class="slide" id="s-vorteile">
+      <div class="sc">
+    <div class="eyebrow">04 · Vorteile</div>
+    <h2>Die Vorteile</h2>
+    <div class="grid g4">
+      <div class="card"><span class="ic">📶</span><h3>Mehr Reichweite</h3><p>Auch entfernte Räume werden endlich zuverlässig erreicht.</p></div>
+      <div class="card"><span class="ic">⚡</span><h3>Einfache Installation</h3><p>In wenigen Minuten fertig – ganz ohne Fachwissen.</p></div>
+      <div class="card"><span class="ic">🔌</span><h3>Keine Kabel nötig</h3><p>Praktisch, gerade in einer Mietwohnung.</p></div>
+      <div class="card"><span class="ic">💶</span><h3>Günstig</h3><p>Meist nur <b style="color:var(--signal)">20–40 €</b>.</p></div>
+    </div>
+  </div>
+    </section>
+
+  <!-- 5 · NACHTEILE -->
+  <section class="slide" id="s-nachteile">
+      <div class="sc">
+    <div class="eyebrow">05 · Nachteile</div>
+    <h2>Die Nachteile</h2>
+    <div class="grid g3">
+      <div class="card warn"><span class="ic">🐢</span><h3>Tempo kann sinken</h3><p>Das Signal muss erneut ausgesendet werden.</p></div>
+      <div class="card warn"><span class="ic">📍</span><h3>Platzierung ist wichtig</h3><p>Zu weit vom Router entfernt bringt kaum eine Verbesserung.</p></div>
+      <div class="card warn"><span class="ic">🏠</span><h3>Großes Haus?</h3><p>Dann reicht ein Repeater oft nicht – ein Mesh-System wäre nötig.</p></div>
+    </div>
+  </div>
+    </section>
+
+  <!-- 6 · FÜR WEN -->
+  <section class="slide" id="s-fuerwen">
+      <div class="sc">
+    <div class="eyebrow">06 · Zielgruppe</div>
+    <h2>Für wen ist das<br>Produkt geeignet?</h2>
+    <div class="chips">
+      <div class="chip"><span>›</span> Familien</div>
+      <div class="chip"><span>›</span> Studierende</div>
+      <div class="chip"><span>›</span> Homeoffice</div>
+      <div class="chip"><span>›</span> Große Wohnung / Haus</div>
+    </div>
+    <p class="lead">Kurz gesagt: für alle, die unter schlechtem WLAN leiden.</p>
+  </div>
+    </section>
+
+  <!-- 7 · MEINUNG -->
+  <section class="slide" id="s-meinung">
+      <div class="sc">
+    <div class="eyebrow">07 · Meine Meinung</div>
+    <div class="meinung">
+      <span class="qmark" aria-hidden="true">„</span>
+      <p class="quote"><span class="k2">Wäre</span> mein WLAN schlecht, <span class="k2">würde</span> ich es zuerst mit einem Repeater versuchen.</p>
+    </div>
+    <p class="lead">Praktisch, preiswert und einfach zu bedienen – ich würde das Gerät jedem empfehlen, der ohne großen Aufwand ein stabileres Netzwerk möchte.</p>
+  </div>
+    </section>
+
+  <!-- 8 · FAZIT -->
+  <section class="slide" id="s-fazit">
+      <div class="sc">
+    <div class="eyebrow">08 · Fazit</div>
+    <h2>Mit wenig Aufwand<br>spürbar besseres WLAN.</h2>
+    <div class="fazit-tags">
+      <div class="t">Leicht zu installieren</div>
+      <div class="t">Vergleichsweise günstig</div>
+      <div class="t">Für die meisten Haushalte ausreichend</div>
+    </div>
+    <div class="thanks">Vielen Dank für Ihre Aufmerksamkeit.<small>Haben Sie noch Fragen?</small></div>
+  </div>
+    </section>
+
+</div>
+
+<div class="hint" id="hint">← →  BLÄTTERN   ·   F  VOLLBILD</div>
+
+<div class="navbar">
+  <div class="counter"><b id="cur">01</b> / <span id="tot">09</span></div>
+  <div class="dots" id="dots"></div>
+  <div class="arrows">
+    <button id="prev" aria-label="Zurück">‹</button>
+    <button id="next" aria-label="Weiter">›</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  const dotsWrap=document.getElementById('dots');
+  const prev=document.getElementById('prev'), next=document.getElementById('next');
+  const cur=document.getElementById('cur'), tot=document.getElementById('tot');
+  const progress=document.getElementById('progress');
+  const hint=document.getElementById('hint');
+  let i=0;
+  tot.textContent=String(slides.length).padStart(2,'0');
+
+  slides.forEach((_,n)=>{
+    const b=document.createElement('button');
+    b.className='dot';b.setAttribute('aria-label','Folie '+(n+1));
+    b.onclick=()=>go(n);
+    dotsWrap.appendChild(b);
+  });
+  const dots=[...dotsWrap.children];
+
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('is-active',k===i));
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    cur.textContent=String(i+1).padStart(2,'0');
+    progress.style.width=((i)/(slides.length-1)*100)+'%';
+    prev.disabled=i===0; next.disabled=i===slides.length-1;
+  }
+  next.onclick=()=>go(i+1);
+  prev.onclick=()=>go(i-1);
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(i+1);hideHint();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(i-1);hideHint();}
+    else if(e.key==='Home'){go(0);}
+    else if(e.key==='End'){go(slides.length-1);}
+    else if(e.key.toLowerCase()==='f'){toggleFs();}
+  });
+
+  // click halves of screen to advance (nice for projector), but not on interactive controls
+  document.getElementById('deck').addEventListener('click',e=>{
+    if(e.target.closest('button, .toggle, a')) return;
+    const x=e.clientX/window.innerWidth;
+    if(x>0.5) go(i+1); else go(i-1);
+    hideHint();
+  });
+
+  let hintTimer=setTimeout(hideHint,5000);
+  function hideHint(){hint.classList.add('gone');clearTimeout(hintTimer);}
+
+  // fullscreen
+  function toggleFs(){
+    if(!document.fullscreenElement){document.documentElement.requestFullscreen?.();}
+    else{document.exitFullscreen?.();}
+  }
+  document.getElementById('fsBtn').onclick=toggleFs;
+
+  // ---- house toggle (signature) ----
+  const houseSvg=document.getElementById('houseSvg');
+  const cap=document.getElementById('houseCap');
+  const bBed=document.getElementById('badgeBed');
+  const bKel=document.getElementById('badgeKeller');
+  const btnOhne=document.getElementById('btnOhne'), btnMit=document.getElementById('btnMit');
+  const roomBed=document.getElementById('roomBed'), roomKel=document.getElementById('roomKeller');
+  const lblBed=document.getElementById('lblBed'), lblKel=document.getElementById('lblKeller');
+
+  function setMode(mit){
+    houseSvg.classList.toggle('withrep',mit);
+    btnMit.classList.toggle('on',mit);
+    btnOhne.classList.toggle('on',!mit);
+    if(mit){
+      cap.innerHTML='<b>Mit Repeater:</b> Der Repeater im Flur empfängt das Signal und sendet es verstärkt weiter – jetzt haben auch Schlafzimmer und Keller stabilen Empfang.';
+      bBed.querySelector('rect').setAttribute('fill','rgba(62,224,192,.16)');
+      bBed.querySelector('rect').setAttribute('stroke','var(--signal)');
+      bBed.querySelector('text').setAttribute('fill','var(--signal)');
+      bBed.querySelector('text').textContent='Starkes Signal';
+      bKel.querySelector('rect').setAttribute('fill','rgba(62,224,192,.16)');
+      bKel.querySelector('rect').setAttribute('stroke','var(--signal)');
+      bKel.querySelector('text').setAttribute('fill','var(--signal)');
+      bKel.querySelector('text').textContent='Guter Empfang';
+      [roomBed,roomKel].forEach(r=>r.setAttribute('stroke','var(--signal-soft)'));
+      [lblBed,lblKel].forEach(l=>l.setAttribute('fill','var(--muted)'));
+    }else{
+      cap.innerHTML='<b>Ohne Repeater:</b> Das Router-Signal wird mit der Entfernung schwächer. Im Schlafzimmer und im Keller bricht die Verbindung oft ab.';
+      bBed.querySelector('rect').setAttribute('fill','rgba(240,104,92,.16)');
+      bBed.querySelector('rect').setAttribute('stroke','var(--weak)');
+      bBed.querySelector('text').setAttribute('fill','var(--weak)');
+      bBed.querySelector('text').textContent='Schwaches Signal';
+      bKel.querySelector('rect').setAttribute('fill','rgba(240,104,92,.16)');
+      bKel.querySelector('rect').setAttribute('stroke','var(--weak)');
+      bKel.querySelector('text').setAttribute('fill','var(--weak)');
+      bKel.querySelector('text').textContent='Kein Empfang';
+      [roomBed,roomKel].forEach(r=>r.setAttribute('stroke','var(--line)'));
+      [lblBed,lblKel].forEach(l=>l.setAttribute('fill','var(--faint)'));
+    }
+  }
+  btnMit.onclick=()=>setMode(true);
+  btnOhne.onclick=()=>setMode(false);
+  setMode(false);
+
+  go(0);
+})();
+</script>
+<script>
+/* Title slide: living network background (nodes + edges + WiFi pulses) */
+(function(){
+  const canvas=document.getElementById('ambientCanvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const title=document.getElementById('s-title');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TEAL='62,224,192', INDIGO='120,130,190';
+  let W=0,H=0,nodes=[],hubs=[],running=false,raf=null,t0=performance.now();
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+
+  function build(){
+    const n=Math.min(60,Math.max(22,Math.round(W*H/17000)));
+    nodes=[];
+    for(let i=0;i<n;i++){
+      nodes.push({x:rnd(W*0.12,W),y:rnd(0,H),vx:rnd(-0.12,0.12),vy:rnd(-0.12,0.12),
+        r:rnd(1.4,2.6),hub:false,ph:Math.random()*Math.PI*2,
+        col:Math.random()<0.7?TEAL:INDIGO});
+    }
+    const right=nodes.filter(nd=>nd.x>W*0.5);
+    hubs=[];
+    (right.length?right:nodes).sort(()=>Math.random()-0.5).slice(0,3).forEach((nd,k)=>{
+      nd.hub=true;nd.r=rnd(3,4);nd.col=TEAL;nd.offset=k*0.4;hubs.push(nd);
+    });
+  }
+  function resize(){
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    const nw=canvas.clientWidth||window.innerWidth, nh=canvas.clientHeight||window.innerHeight;
+    const changed=(nw!==W||nh!==H);
+    W=nw;H=nh;
+    canvas.width=Math.max(1,W*dpr);canvas.height=Math.max(1,H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    if(changed||!nodes.length) build();
+  }
+  function fade(x){const f=(x/W-0.22)/0.20;return f<0?0:(f>1?1:f);}
+  function edges(maxAlpha){
+    const DIST=Math.min(170,W*0.16),DIST2=DIST*DIST;
+    ctx.lineWidth=1;
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j],dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;
+      if(d2<DIST2){
+        const al=(1-Math.sqrt(d2)/DIST)*maxAlpha*fade((a.x+b.x)/2);
+        ctx.strokeStyle='rgba('+TEAL+','+al.toFixed(3)+')';
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      }
+    }
+  }
+  function frame(now){
+    if(!running) return;
+    const t=(now-t0)/1000;
+    ctx.clearRect(0,0,W,H);
+    for(const nd of nodes){
+      nd.x+=nd.vx;nd.y+=nd.vy;
+      if(nd.x<-20)nd.x=W+20; if(nd.x>W+20)nd.x=-20;
+      if(nd.y<-20)nd.y=H+20; if(nd.y>H+20)nd.y=-20;
+    }
+    edges(0.22);
+    const period=3.4,maxR=Math.min(300,W*0.4),count=3;
+    for(const hb of hubs){
+      for(let k=0;k<count;k++){
+        const p=((t/period)+hb.offset+k/count)%1;
+        const al=(1-p)*0.30*fade(hb.x);
+        if(al<=0) continue;
+        ctx.strokeStyle='rgba('+TEAL+','+al.toFixed(3)+')';
+        ctx.lineWidth=1.4;
+        ctx.beginPath();ctx.arc(hb.x,hb.y,p*maxR,0,Math.PI*2);ctx.stroke();
+      }
+    }
+    for(const nd of nodes){
+      const tw=nd.hub?1:(0.5+0.5*Math.sin(t*1.5+nd.ph));
+      const al=(nd.hub?0.95:(0.35+0.4*tw))*fade(nd.x);
+      ctx.fillStyle='rgba('+nd.col+','+al.toFixed(3)+')';
+      ctx.beginPath();ctx.arc(nd.x,nd.y,nd.r,0,Math.PI*2);ctx.fill();
+      if(nd.hub){
+        ctx.fillStyle='rgba('+TEAL+','+(0.16*fade(nd.x)).toFixed(3)+')';
+        ctx.beginPath();ctx.arc(nd.x,nd.y,nd.r*3.2,0,Math.PI*2);ctx.fill();
+      }
+    }
+    raf=requestAnimationFrame(frame);
+  }
+  function staticFrame(){ ctx.clearRect(0,0,W,H); edges(0.2);
+    for(const nd of nodes){ctx.fillStyle='rgba('+nd.col+',0.6)';ctx.beginPath();ctx.arc(nd.x,nd.y,nd.r,0,Math.PI*2);ctx.fill();}
+  }
+  function start(){ if(!running){running=true;t0=performance.now();raf=requestAnimationFrame(frame);} }
+  function stop(){ running=false; if(raf) cancelAnimationFrame(raf); }
+
+  resize();
+  window.addEventListener('resize',()=>{resize(); if(!running&&title.classList.contains('is-active'))start();});
+  new MutationObserver(()=>{title.classList.contains('is-active')?start():stop();}).observe(title,{attributes:true,attributeFilter:['class']});
+  if('ResizeObserver' in window){ new ResizeObserver(()=>{resize(); if(title.classList.contains('is-active'))start();}).observe(canvas); }
+  window.addEventListener('load',()=>{resize(); if(title.classList.contains('is-active'))start();});
+  setTimeout(()=>{resize(); if(title.classList.contains('is-active'))start();},150);
+  if(title.classList.contains('is-active')) start();
+})();
+</script>
+</body>
+</html>
