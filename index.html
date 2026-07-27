@@ -40,13 +40,14 @@
   /* ---------- slides ---------- */
   .slide{
     position:absolute;inset:0;
-    display:flex;flex-direction:column;justify-content:safe center;
+    display:flex;
     padding:clamp(34px,6vh,60px) clamp(24px,5vw,80px) clamp(108px,13vh,128px);
     overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     opacity:0;visibility:hidden;
     transform:translateY(14px);
     transition:opacity .5s ease, transform .5s ease, visibility .5s;
   }
+  .sc{margin:auto 0;width:100%;display:flex;flex-direction:column}
   .slide.is-active{opacity:1;visibility:visible;transform:none}
 
   .eyebrow{
@@ -80,7 +81,6 @@
   .accent-gold{color:var(--gold)}
 
   /* ---------- title slide ---------- */
-  #s-title{align-items:flex-start}
   .title-tag{
     font-family:"Space Mono",monospace;font-size:14px;color:var(--muted);
     letter-spacing:.05em;margin-top:34px;
@@ -147,7 +147,7 @@
   .chip span{color:var(--signal)}
 
   /* quote */
-  .meinung{display:grid;grid-template-columns:auto 1fr;column-gap:clamp(8px,1.4vw,18px);align-items:center;max-width:26ch;margin-top:10px}
+  .meinung{display:grid;grid-template-columns:auto 1fr;column-gap:clamp(10px,1.6vw,22px);align-items:center;max-width:760px;margin-top:10px}
   .quote{
     font-family:"Space Grotesk";font-weight:600;
     font-size:clamp(26px,4.2vw,52px);line-height:1.12;letter-spacing:-.015em;
@@ -294,15 +294,18 @@
 
   <!-- 0 · TITEL -->
   <section class="slide" id="s-title">
+      <div class="sc">
     <canvas class="ambient" id="ambientCanvas" aria-hidden="true"></canvas>
     <div class="eyebrow">Produktpräsentation · Deutschkurs B2</div>
     <h1>Besseres WLAN<br>zu Hause.</h1>
     <div class="title-tag">Das Gerät: <b>Der <span class="device-word">WLAN-Repeater</span></b> — auch WLAN-Verstärker</div>
     <p class="lead">Schwaches Signal im Schlafzimmer oder Keller? Eine einfache und günstige Lösung.</p>
-  </section>
+  </div>
+    </section>
 
   <!-- 1 · PROBLEM -->
   <section class="slide" id="s-problem">
+      <div class="sc">
     <div class="cols">
       <div>
         <div class="eyebrow">01 · Die Situation</div>
@@ -349,10 +352,12 @@
         </svg>
       </div>
     </div>
-  </section>
+  </div>
+    </section>
 
   <!-- 2 · WAS IST DAS -->
   <section class="slide" id="s-was">
+      <div class="sc">
     <div class="cols">
       <div>
         <div class="eyebrow">02 · Definition</div>
@@ -385,10 +390,12 @@
         </svg>
       </div>
     </div>
-  </section>
+  </div>
+    </section>
 
   <!-- 3 · WIE FUNKTIONIERT ES (SIGNATURE) -->
   <section class="slide" id="s-wie">
+      <div class="sc">
     <div class="eyebrow">03 · Funktionsweise</div>
     <div class="house-wrap">
       <div class="toggle" role="group" aria-label="Ansicht wählen">
@@ -451,10 +458,12 @@
         <b>Ohne Repeater:</b> Das Router-Signal wird mit der Entfernung schwächer. Im Schlafzimmer und im Keller bricht die Verbindung oft ab.
       </p>
     </div>
-  </section>
+  </div>
+    </section>
 
   <!-- 4 · VORTEILE -->
   <section class="slide" id="s-vorteile">
+      <div class="sc">
     <div class="eyebrow">04 · Vorteile</div>
     <h2>Die Vorteile</h2>
     <div class="grid g4">
@@ -463,10 +472,12 @@
       <div class="card"><span class="ic">🔌</span><h3>Keine Kabel nötig</h3><p>Praktisch, gerade in einer Mietwohnung.</p></div>
       <div class="card"><span class="ic">💶</span><h3>Günstig</h3><p>Meist nur <b style="color:var(--signal)">20–40 €</b>.</p></div>
     </div>
-  </section>
+  </div>
+    </section>
 
   <!-- 5 · NACHTEILE -->
   <section class="slide" id="s-nachteile">
+      <div class="sc">
     <div class="eyebrow">05 · Nachteile</div>
     <h2>Die Nachteile</h2>
     <div class="grid g3">
@@ -474,10 +485,12 @@
       <div class="card warn"><span class="ic">📍</span><h3>Platzierung ist wichtig</h3><p>Zu weit vom Router entfernt bringt kaum eine Verbesserung.</p></div>
       <div class="card warn"><span class="ic">🏠</span><h3>Großes Haus?</h3><p>Dann reicht ein Repeater oft nicht – ein Mesh-System wäre nötig.</p></div>
     </div>
-  </section>
+  </div>
+    </section>
 
   <!-- 6 · FÜR WEN -->
   <section class="slide" id="s-fuerwen">
+      <div class="sc">
     <div class="eyebrow">06 · Zielgruppe</div>
     <h2>Für wen ist das<br>Produkt geeignet?</h2>
     <div class="chips">
@@ -487,20 +500,24 @@
       <div class="chip"><span>›</span> Große Wohnung / Haus</div>
     </div>
     <p class="lead">Kurz gesagt: für alle, die unter schlechtem WLAN leiden.</p>
-  </section>
+  </div>
+    </section>
 
   <!-- 7 · MEINUNG -->
   <section class="slide" id="s-meinung">
+      <div class="sc">
     <div class="eyebrow">07 · Meine Meinung</div>
     <div class="meinung">
       <span class="qmark" aria-hidden="true">„</span>
       <p class="quote"><span class="k2">Wäre</span> mein WLAN schlecht, <span class="k2">würde</span> ich es zuerst mit einem Repeater versuchen.</p>
     </div>
     <p class="lead">Praktisch, preiswert und einfach zu bedienen – ich würde das Gerät jedem empfehlen, der ohne großen Aufwand ein stabileres Netzwerk möchte.</p>
-  </section>
+  </div>
+    </section>
 
   <!-- 8 · FAZIT -->
   <section class="slide" id="s-fazit">
+      <div class="sc">
     <div class="eyebrow">08 · Fazit</div>
     <h2>Mit wenig Aufwand<br>spürbar besseres WLAN.</h2>
     <div class="fazit-tags">
@@ -509,7 +526,8 @@
       <div class="t">Für die meisten Haushalte ausreichend</div>
     </div>
     <div class="thanks">Vielen Dank für Ihre Aufmerksamkeit.<small>Haben Sie noch Fragen?</small></div>
-  </section>
+  </div>
+    </section>
 
 </div>
 
